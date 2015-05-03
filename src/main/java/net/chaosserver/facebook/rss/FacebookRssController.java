@@ -36,44 +36,96 @@ public class FacebookRssController {
     public String get(
     		@RequestParam(value = "facebookId", required = true) String facebookId,
     		@RequestParam(value = "code", required = false) String facebookCode
-    		) throws FacebookUnauthorizedException, URISyntaxException {
+    		) throws FacebookUnauthorizedException, URISyntaxException, JsonParseException, IOException {
 		
 		String facebookAccessToken = null;
 		logger.debug("Input parameters - facebookId [{}], code [{}]", facebookId, facebookCode);
 
 		try {
-			facebookAccessToken = facebookHelper.getAccessToken(facebookId);
+			facebookAccessToken = facebookHelper.getAccessToken(facebookId, facebookCode);
 		} catch (FacebookUnauthorizedException e) {
-			// Facebook is unauthorized, need to get the access token.
-			if(facebookCode != null) {
-				try {
-					logger.debug("Have code in the URL, attempting to exchange for access token.");
-
-					// We got a code, so need an app secret
-					facebookAccessToken = facebookHelper.getAccessTokenWithCode(facebookCode);
-					facebookHelper.setAccessToken(facebookId, facebookAccessToken);
-				} catch (FacebookUnauthorizedException e1) {
-					logger.debug("facebookCode was in URL, but unable to exchange for access token", e1);
-					throw(e1);
-				}
-			} else {
-				URIBuilder uriBuilder = new URIBuilder("https://www.facebook.com/dialog/oauth");
-				uriBuilder.addParameter("client_id", "1658060647750088");
-				uriBuilder.addParameter("redirect_uri", "http://localhost:8080/facebook/rss?facebookId=jordan.reed");
-				uriBuilder.addParameter("scope", "read_stream");
-				return "redirect:" + uriBuilder.build();
-			}
+			URIBuilder uriBuilder = new URIBuilder("https://www.facebook.com/dialog/oauth");
+			uriBuilder.addParameter("client_id", "1658060647750088");
+			uriBuilder.addParameter("redirect_uri", "http://localhost:8080/facebook/rss?facebookId=jordan.reed");
+			uriBuilder.addParameter("scope", "read_stream");
+			return "redirect:" + uriBuilder.build();
 		}
 		
-		// You must have a valid access token at this point.
-		URIBuilder uriBuilder = new URIBuilder("https://graph.facebook.com/v2.3/me/home");
-		uriBuilder.addParameter("access_token", facebookAccessToken);
+		// 1. Get Friend List & Store
+		// 2. For Each Friend
+		//   2a. /{user-id}/links
+		//   2b. /{user-id}/links
+		//   2c. /{user-id}/statuses
 		
+	    URIBuilder uriBuilder = new URIBuilder("https://graph.facebook.com/me/home");
+	    uriBuilder.addParameter("access_token", facebookAccessToken);
+	    URL debugTokenUrl = uriBuilder.build().toURL();
+	    
+	    logger.debug("Request for accessTokenCheck [{}]", debugTokenUrl);
+	    ObjectMapper mapper = new ObjectMapper();
+	    JsonFactory factory = mapper.getJsonFactory();
+	    JsonParser jp = factory.createJsonParser(new BufferedInputStream(
+	    		debugTokenUrl.openStream()));
+	    
+	    JsonNode actualObj = mapper.readTree(jp);
+	    
+	    if(actualObj.get("data").isArray()) {
+	        for (JsonNode objNode : actualObj.path("data")) {
+	            logger.debug("id [{}], from.name [{}], message [{}], "
+	            		+ "picture [{}], link [{}], createdTime [{}], "
+	            		+ "type [{}], statusType [{}]", 
+	            		objNode.path("id").getTextValue(),
+	            		objNode.path("from").path("name").getTextValue(),
+	            		objNode.path("message").getTextValue(),
+	            		objNode.path("picture").getTextValue(),
+	            		objNode.path("link").getTextValue(),
+	            		objNode.path("created_time").getTextValue(),
+	            		objNode.path("type").getTextValue(),
+	            		objNode.path("status_type").getTextValue());
+	        	// .id
+	        	// .from.name
+	        	// .message
+	        	// .picture
+	        	// .link
+	        	// .created_time
+	        	// "type":"link",
+	        	// "status_type":"shared_story",
+	        	
+	        }	    	
+	    } else {
+	    	logger.debug(".data is not an array");
+	    }
+	    
+	    
+	    // boolean accessTokenValid = actualObj.path("data").path("is_valid").getBooleanValue();
 		
-		// localhost:8080/facebook/rss?facebookId=jordan.reed
-		// https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow/v2.3		
-		
+				
         return "facebook/rss/view";
     }
+	
+    @RequestMapping(value = "/update", method = RequestMethod.GET)
+    public String update(    		
+    		@RequestParam(value = "facebookId", required = true) String facebookId,
+    		@RequestParam(value = "code", required = false) String facebookCode
+    		) throws FacebookUnauthorizedException, URISyntaxException {
+    	
+		String facebookAccessToken = null;
+		logger.debug("Input parameters - facebookId [{}], code [{}]", facebookId, facebookCode);    	
+		try {
+			facebookAccessToken = facebookHelper.getAccessToken(facebookId, facebookCode);
+		} catch (FacebookUnauthorizedException e) {
+			URIBuilder uriBuilder = new URIBuilder("https://www.facebook.com/dialog/oauth");
+			uriBuilder.addParameter("client_id", "1658060647750088");
+			uriBuilder.addParameter("redirect_uri", "http://localhost:8080/facebook/rss?facebookId=jordan.reed");
+			uriBuilder.addParameter("scope", "read_stream");
+			return "redirect:" + uriBuilder.build();
+		}
+		
+		
+    	
+    	
+    	return "facebook/rss/view";
+    }
+	
 
 }

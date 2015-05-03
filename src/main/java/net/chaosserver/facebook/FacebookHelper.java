@@ -8,14 +8,13 @@ import java.net.URL;
 import org.apache.http.client.utils.URIBuilder;
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
@@ -30,18 +29,36 @@ public class FacebookHelper {
     
     public FacebookHelper() {
     	chanomieFeederAppSecret = System.getProperty("chanomieFeederAppKey");
-    	logger.debug("Successfully loaded from property chanomieFeederApp.apikey [{}]", chanomieFeederAppSecret == null);
+    	logger.debug("Loaded from property chanomieFeederAppKey, is null? [{}]", chanomieFeederAppSecret == null);
         if (chanomieFeederAppSecret == null) {
         	chanomieFeederAppSecret = System.getenv("chanomieFeederAppKey");
-        	logger.debug("Successfully loaded from environment chanomieFeederAppKey [{}]", chanomieFeederAppSecret == null);
+        	logger.debug("Loaded from environment chanomieFeederAppKey, is null? [{}]", chanomieFeederAppSecret == null);
         }
     }
 
+    public String getAccessToken(String facebookId, String facebookCode) throws FacebookUnauthorizedException {
+    	String facebookAccessToken;
+    	try {
+			facebookAccessToken = getPersistedAccessToken(facebookId);
+		} catch (FacebookUnauthorizedException e) {
+			// No persisted token.
+			if(facebookCode == null) {
+				throw new FacebookUnauthorizedException("No access token");
+			} else {
+				facebookAccessToken = getAccessTokenWithCode(facebookCode);
+				setAccessToken(facebookId, facebookAccessToken);
+			}
+			
+		}
+    	
+    	return facebookAccessToken;
+    }
+    
     /**
      * Returns the access token for the given Facebook Id
      * @param facebookId
      */
-	public String getAccessToken(String facebookId) throws FacebookUnauthorizedException {
+	public String getPersistedAccessToken(String facebookId) throws FacebookUnauthorizedException {
 		String facebookAccessTokenString;
 		try {
 		    Key facebookAccessTokenKey = KeyFactory.createKey("FacebookAccessToken", facebookId);
@@ -51,17 +68,21 @@ public class FacebookHelper {
 		    // Test the validity of the access token.
 		    URIBuilder uriBuilder = new URIBuilder("https://graph.facebook.com/debug_token");
 		    uriBuilder.addParameter("input_token", facebookAccessTokenString);
-		    uriBuilder.addParameter("access_token", getChanomieFeederAppSecret());
+		    uriBuilder.addParameter("access_token", facebookAccessTokenString);
 		    URL debugTokenUrl = uriBuilder.build().toURL();
 		    
+		    logger.debug("Request for accessTokenCheck [{}]", debugTokenUrl);
 		    ObjectMapper mapper = new ObjectMapper();
 		    JsonFactory factory = mapper.getJsonFactory();
 		    JsonParser jp = factory.createJsonParser(new BufferedInputStream(
 		    		debugTokenUrl.openStream()));
 		    
 		    JsonNode actualObj = mapper.readTree(jp);
-		    String accessTokenValid = actualObj.path("data").path("is_valid").getTextValue();
-		    if(!Boolean.parseBoolean(accessTokenValid)) {
+		    boolean accessTokenValid = actualObj.path("data").path("is_valid").getBooleanValue();
+		    logger.debug("Response from accessTokenCheck [{}], accessTokenValid [{}]", actualObj, accessTokenValid);		    
+		    
+		    if(!accessTokenValid) {
+			    logger.debug("Stored access token is invalid. Delete from storage.");		    
 		    	datastore.delete(facebookAccessTokenKey);
 		    	throw new FacebookUnauthorizedException("Access token was invalid for [" + facebookId + "]");
 		    }
