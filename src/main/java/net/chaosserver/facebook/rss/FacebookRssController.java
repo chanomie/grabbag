@@ -6,12 +6,16 @@ import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 
 import net.chaosserver.facebook.FacebookHelper;
 import net.chaosserver.facebook.FacebookUnauthorizedException;
+import net.chaosserver.rss.RssItem;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -35,7 +39,8 @@ public class FacebookRssController {
 	@RequestMapping(method = RequestMethod.GET)
     public String get(
     		@RequestParam(value = "facebookId", required = true) String facebookId,
-    		@RequestParam(value = "code", required = false) String facebookCode
+    		@RequestParam(value = "code", required = false) String facebookCode,
+    		Model model
     		) throws FacebookUnauthorizedException, URISyntaxException, JsonParseException, IOException {
 		
 		String facebookAccessToken = null;
@@ -66,9 +71,9 @@ public class FacebookRssController {
 	    JsonFactory factory = mapper.getJsonFactory();
 	    JsonParser jp = factory.createJsonParser(new BufferedInputStream(
 	    		debugTokenUrl.openStream()));
-	    
+
+	    List rssItemList = new ArrayList<RssItem>();
 	    JsonNode actualObj = mapper.readTree(jp);
-	    
 	    if(actualObj.get("data").isArray()) {
 	        for (JsonNode objNode : actualObj.path("data")) {
 	            logger.debug("id [{}], from.name [{}], message [{}], "
@@ -82,24 +87,35 @@ public class FacebookRssController {
 	            		objNode.path("created_time").getTextValue(),
 	            		objNode.path("type").getTextValue(),
 	            		objNode.path("status_type").getTextValue());
-	        	// .id
-	        	// .from.name
-	        	// .message
-	        	// .picture
-	        	// .link
-	        	// .created_time
-	        	// "type":"link",
-	        	// "status_type":"shared_story",
-	        	
-	        }	    	
+	            
+	            RssItem rssItem = new RssItem();
+	            
+	            rssItem.setTitle(objNode.path("story").getTextValue());
+	            rssItem.setLink(objNode.path("link").getTextValue());
+	            rssItem.setDescription(objNode.path("message").getTextValue());
+	            rssItem.setAuthor(objNode.path("from").path("name").getTextValue());
+	            
+	            // actions[0].link
+	            rssItem.setComments(
+	            		"https://graph.facebook.com/" 
+	            		+ objNode.path("id").getTextValue() 
+	            		+ "/comments"
+	            );
+	            rssItem.setGuid(objNode.path("id").getTextValue());
+	            rssItem.setPubDate(objNode.path("created_time").getTextValue());
+	            rssItemList.add(rssItem);
+	            
+	            /*
+	            protected String category;
+	            protected String enclosure;
+	            protected String source;
+	            */
+	        }
+	        model.addAttribute("rssItemList", rssItemList);
 	    } else {
 	    	logger.debug(".data is not an array");
-	    }
-	    
-	    
-	    // boolean accessTokenValid = actualObj.path("data").path("is_valid").getBooleanValue();
+	    }		
 		
-				
         return "facebook/rss/view";
     }
 	
