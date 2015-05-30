@@ -8,6 +8,8 @@ import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.logging.Logger;
@@ -25,18 +27,14 @@ public class OldPirateBayShowLoader implements ShowLoader
   protected Pattern showNamePattern = Pattern.compile(".*<a href='(magnet:[^']*)'.*<span>(.*)</span>.*<td class=\"date-row\">(.*?)</td>.*");
   private static final Logger log = Logger.getLogger(OldPirateBayShowLoader.class.getName());
 
-  public static void main(String[] args) throws Exception {
-	  
-    OldPirateBayShowLoader showLoader = new OldPirateBayShowLoader();
-    String resultJson = showLoader.getResultObject("game of thrones", "JSON", 5, "All");
-    System.out.println(resultJson);
+  public List<TorrentLink> getResultList(String searchTerm, String format, int results,
+			String category) throws IOException {
 
-    System.out.println("");
-
-    resultJson = showLoader.getResultObject("game of thrones", "TEXT", 5, "Comics");
-    System.out.println(resultJson);
+		List<TorrentLink> torrentLinkList = new ArrayList<TorrentLink>();
+		return torrentLinkList;
   }
 
+  @Deprecated
   public String getResultObject(String searchTerm, String resultFormat, int results, String category) throws UnsupportedEncodingException, IOException {
     StringBuffer resultString = new StringBuffer();
     int showCounter = 0;

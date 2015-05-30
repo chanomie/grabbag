@@ -64,7 +64,7 @@ public class IsoHuntShowLoader implements ShowLoader
 	return torrentLinkList;
   }
 
-  
+  @Deprecated
   public String getResultObject(String searchTerm, String resultFormat, int results, String category) throws UnsupportedEncodingException, IOException {
     StringBuffer resultString = new StringBuffer();
     int showCounter = 0;
