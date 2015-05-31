@@ -24,7 +24,7 @@ public class IsoHuntShowLoader implements ShowLoader
   protected Pattern showNamePattern = Pattern.compile(".*<td class=\"title-row\"><a href=\"([^\"]*)\"><span>(.*)</span>.*<i title=\"Verified Torrent\">.*<td class=\"date-row\">(.*?)</td>.*");
   private static final Logger log = Logger.getLogger(IsoHuntShowLoader.class.getName());
 
-  public List<TorrentLink> getResultList(String searchTerm, String format, int results,
+  public List<TorrentLink> getResultList(String searchTerm, int results,
 			String category) throws IOException {
 
 	List<TorrentLink> torrentLinkList = new ArrayList<TorrentLink>();

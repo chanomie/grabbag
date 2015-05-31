@@ -1,5 +1,6 @@
 package net.chaosserver.getmyshows;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -8,6 +9,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -17,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
  *  
  * @author jreed
  */
+@Controller
 @RequestMapping("/getmyshows")
 public class ShowLoaderController {
 	final Logger logger = LoggerFactory.getLogger(ShowLoaderController.class);
@@ -33,14 +37,16 @@ public class ShowLoaderController {
 	};
 	
 	@RequestMapping(value = "/search", method = RequestMethod.GET)
-	public String search(@RequestParam(value = "loader") String loader,
+	public String search(@RequestParam(value = "loader", required = false) String loader,
 		@RequestParam(value = "show") String show,
-		@RequestParam(value = "format") String format,
-		@RequestParam(value = "category") String category,
-		@RequestParam(value = "results") String resultsString,
+		@RequestParam(value = "format", required = false) String format,
+		@RequestParam(value = "category", required = false) String category,
+		@RequestParam(value = "results", required = false) String resultsString,
+		Model model,
 		HttpServletResponse response) {
 		
 	    ShowLoader showLoader;
+	    String resultView;
     	try {
     		if(loaderMap.containsKey(loader)) {
 				Class showLoaderClass = Class.forName(loaderMap.get(loader));
@@ -62,14 +68,27 @@ public class ShowLoaderController {
 	      results = RESULT_DEFAULT;
 	    }
 	    
+	    try {
+	    	model.addAttribute("resultList",
+	    			showLoader.getResultList(show, results, category));
+		} catch (IOException e) {
+		    if ("TEXT".equals(format)) {
+			    // printWriter.print("ERROR|"+e.toString());
+		    } else {
+			    // printWriter.print("{\"error\":\""+e.toString()+"\"}");
+		    }
+		}
+
+	    response.addHeader("Access-Control-Allow-Origin", "*");
 	    if ("TEXT".equals(format)) {
 	    	response.setContentType("text/plain");
+	    	resultView = "getmyshows/textView";
 	    } else {
 	        response.setContentType("application/json");
+	    	resultView = "getmyshows/jsonView";
 	    }
-	    response.addHeader("Access-Control-Allow-Origin", "*");
 		
-		return null;
+		return resultView;
 	}
 
 }

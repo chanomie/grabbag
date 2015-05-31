@@ -27,8 +27,7 @@ public class PirateBayShowLoader implements ShowLoader {
 	private static final Logger log = Logger
 			.getLogger(PirateBayShowLoader.class.getName());
 
-	public List<TorrentLink> getResultList(String searchTerm,
-			String resultFormat, int results, String category)
+	public List<TorrentLink> getResultList(String searchTerm, int results, String category)
 			throws UnsupportedEncodingException, IOException {
 
 		List<TorrentLink> torrentLinkList = new ArrayList<TorrentLink>();

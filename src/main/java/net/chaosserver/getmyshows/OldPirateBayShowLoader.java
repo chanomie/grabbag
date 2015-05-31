@@ -27,11 +27,12 @@ public class OldPirateBayShowLoader implements ShowLoader
   protected Pattern showNamePattern = Pattern.compile(".*<a href='(magnet:[^']*)'.*<span>(.*)</span>.*<td class=\"date-row\">(.*?)</td>.*");
   private static final Logger log = Logger.getLogger(OldPirateBayShowLoader.class.getName());
 
-  public List<TorrentLink> getResultList(String searchTerm, String format, int results,
+  public List<TorrentLink> getResultList(String searchTerm, int results,
 			String category) throws IOException {
 
 		List<TorrentLink> torrentLinkList = new ArrayList<TorrentLink>();
-		return torrentLinkList;
+		throw new UnsupportedOperationException();
+		// return torrentLinkList;
   }
 
   @Deprecated
