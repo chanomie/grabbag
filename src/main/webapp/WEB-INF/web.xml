@@ -36,7 +36,7 @@
     <param-name>org.mortbay.jetty.servlet.SessionURL</param-name>
     <param-value>none</param-value>
   </context-param>
- <session-config>
+  <session-config>
     <tracking-mode>COOKIE</tracking-mode>
   </session-config>
   <security-constraint>
@@ -47,4 +47,13 @@
       <transport-guarantee>CONFIDENTIAL</transport-guarantee>
     </user-data-constraint>
   </security-constraint>
+  <!-- security-constraint>
+    <web-resource-collection>
+      <web-resource-name>slackCalendarUpdater</web-resource-name>
+      <url-pattern>/slackCalendarUpdater/*</url-pattern>
+    </web-resource-collection>
+    <auth-constraint>
+      <role-name>*</role-name>
+    </auth-constraint>
+  </security-constraint -->  
 </web-app>
